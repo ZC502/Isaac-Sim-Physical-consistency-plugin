@@ -1,1 +1,15 @@
+[package]
+title = "Octonion Temporal Semantics"
+description = "Octonion-based temporal semantics layer for physics simulation"
+version = "0.1.0"
+category = "Simulation"
+keywords = ["physics", "octonion", "temporal", "debug"]
+readme = "README.md"
+
+[dependencies]
+"omni.isaac.core" = {}
+"omni.physx" = {}
+
+[[python.module]]
+name = "octonion_semantics"
 
