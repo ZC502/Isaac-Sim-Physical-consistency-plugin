@@ -1,6 +1,13 @@
 import numpy as np
 
 class Octonion:
+"""
+Note:
+This is an octonion multiplication specifically designed for temporal semantic coupling. 
+For the specific mathematical and physical principles, please download:
+《Discrete Time Steps Are Killing Physical AI》
+https://github.com/ZC502/TinyOEKF/blob/master/docs/Continuous_Physics_Solver_for_AI_Wang_Liu.pdf
+"""
     def __init__(self, r=1.0, i=None):
         self.r = float(r)
         self.i = np.zeros(7, dtype=np.float64) if i is None else np.array(i, dtype=np.float64)
@@ -97,11 +104,5 @@ class Octonion:
 
         return c
 
-"""
-Note:
-This is an octonion multiplication specifically designed for temporal semantic coupling. 
-For the specific mathematical and physical principles, please download:
-《Discrete Time Steps Are Killing Physical AI》
-https://github.com/ZC502/TinyOEKF/blob/master/docs/Continuous_Physics_Solver_for_AI_Wang_Liu.pdf
-"""
+
 
