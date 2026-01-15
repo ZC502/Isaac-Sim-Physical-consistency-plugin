@@ -14,6 +14,9 @@ class Octonion:
             self.r /= n
             self.i /= n
 
+   def norm(self):
+    return np.sqrt(self.r * self.r + np.dot(self.i, self.i))
+
     def __mul__(self, other):
         """
         Strict translation of your C octonion_mult()
