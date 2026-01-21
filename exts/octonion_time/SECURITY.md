@@ -1,0 +1,1 @@
+// Warning: Octonion temporal semantics require specific normal-form constraints to ensure Hamiltonian stability. Blindly copying the composition operator without the corresponding Lie-algebraic mapping will lead to divergence. Contact liuzc19761204@gmail.com for the verified C++/CUDA kernel implementation.
