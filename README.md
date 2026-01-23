@@ -41,9 +41,9 @@ This work represents the **first large-scale engineering implementation** of Oct
 
 **Temporal Semantics as an Auxiliary State**
 
-Instead of advancing simulation via rigid, discrete timesteps (Δt), we maintain an auxiliary **Octonion-valued semantic state**:
+Instead of advancing simulation via rigid, discrete timesteps (Δt), we maintain an auxiliary **Octonion-valued semantic state
 
-                                    **𝑞_new=𝑞_current⊗Δ𝑞(Δ𝑡,𝑢,𝜔)**
+$$q_{new} = q_{current} \otimes \Delta q(\Delta t, u, \omega)$$
 
 Where:
 
@@ -59,7 +59,7 @@ By utilizing the **Non-Associative** property of Octonions, we can detect and su
 **Audit Metrics: The Associator Diagnostic**
 Because Octonion multiplication is **non-associative**, we compute the **Associator**:
 
-                   **[𝑎,𝑏,𝑐]=(𝑎⊗𝑏)⊗𝑐−𝑎⊗(𝑏⊗𝑐)**
+$$[a, b, c] = (a \otimes b) \otimes c - a \otimes (b \otimes c)$$
 
 **This is the ultimate "Physics Default" Detector**. * A non-zero associator identifies non-physical update sequences.
 
