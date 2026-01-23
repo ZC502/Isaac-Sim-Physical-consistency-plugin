@@ -2,6 +2,7 @@
 **Octonion-Based Temporal Semantics Layer for Robotics & Embodied AI**
 
 
+
 **Strategic Inquiry & Business Contact:** > **[liuzc19761204@gmail.com]** > *Notice: We are currently evaluating partnerships with major robotics labs and semiconductor firms. Priority is given based on technical alignment and strategic commitment.*
 
 ---
