@@ -37,6 +37,37 @@ This work represents the first large-scale engineering implementation of **Octon
 
 This project moves beyond the passive representation of physics found in his seminal work (*The Principles of Octonion Mathematical Physics*, Chinese version, ISBN: 978-7-5576-8256-9), translating pure algebraic structures into active computational constraints for Embodied AI.
 
+---
+
+## 🎮 Active Intervention & Audit Demo (v0.3 Update)
+**"We don't just score physics; we stabilize it."**
+
+The v0.3 update transitions the plugin from a passive diagnostic tool to an **Active Temporal Controller**. By coupling the Octonion $i_6$ drift component directly to the PhysX Solver, we demonstrate the first closed-loop "Physical Debt" compensation.
+
+### Demo 1: High-Load Cantilever Arm (The Jitter Test)
+* **The Scenario:** A 2-joint robotic arm with zero friction, low damping, and a 25kg payload.
+* **The Problem:** Standard PhysX integrators suffer from "Mathematical Jitter" due to discrete energy leakage, causing the arm to vibrate uncontrollably regardless of GPU power.
+* **The Solution:**
+    1.  **Detection:** Octonion semantics detect the temporal drift magnitude in real-time.
+    2.  **Intervention:** The plugin dynamically scales **PhysX Solver Iterations** (up to 24x) and injects **Adaptive Joint Damping**.
+    3.  **Result:** Jitter is "flattened" instantly. The motion becomes physically smooth.
+
+### 🛠️ How to Reproduce
+1.  **Generate Scene:** Run `scripts/create_demo_scene.py` in Isaac Sim Script Editor.
+2.  **Baseline:** Press Play. Observe the payload jitter (Causality drift).
+3.  **Activate:** Enable `OctonionTimeExtension`.
+4.  **Verify:** Observe Console logs: `[Octonion-Feedback] Boosting Solver Iters` and the visual stabilization of the arm.
+
+---
+
+## 📊 Evaluation Metrics: From "Scores" to "Consequences"
+In v0.3, we have deprecated the static PCA scoring system in favor of **Dynamic Intervention Metrics**:
+* **Drift Magnitude ($\Delta \Phi$):** Extracted from the $i_6$ non-associative component.
+* **Intervention Response:** Real-time adjustment of `solver_position_iteration_count`.
+* **Stability Delta:** The measurable reduction in high-frequency numerical noise during contact/high-dynamic events.
+
+---
+
 ### Temporal Semantics as an Auxiliary State
 Instead of advancing simulation via rigid, discrete timesteps ($\Delta t$), we maintain an auxiliary **Octonion-valued semantic state** on a non-associative manifold:
 
