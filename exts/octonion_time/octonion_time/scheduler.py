@@ -1,3 +1,6 @@
+# get_drift_magnitude() is the ONLY signal exposed to the PhysX feedback loop.
+# It defines when and how the solver intervention is triggered.
+
 from .octonion import Octonion
 from .delta_q import compute_delta_q
 import numpy as np
