@@ -3,12 +3,12 @@
 
 
 
-**Strategic Inquiry & Business Contact:** > **[liuzc19761204@gmail.com]** > *Notice: We are currently evaluating partnerships with major robotics labs and semiconductor firms. Priority is given based on technical alignment and strategic commitment.*
+**Strategic Inquiry & Business Contact:** > **[liuzc19761204@gmail.com]** > *Notice: We are currently evaluating partnerships with major robotics labs and semiconductor firms. Priority discussions are based on technical alignment and mutual strategic interest.*
 
 ---
 
 ## 🛡️ Proprietary Notice & Licensing Terms
-1. **Intellectual Property:** This repository contains **Proprietary Algorithms** (Patent-Pending status) regarding Octonion-based temporal manifolds.
+1. **Intellectual Property:** This repository contains **Proprietary Algorithms** (Patent Filing in Preparation) regarding Octonion-based temporal manifolds.
 2. **Academic Use:** Non-commercial research is permitted. Please cite the repository and referenced works accordingly.
 3. **Commercial/Production Use:** Implementation in any revenue-generating simulation pipeline, robotic training, or deployment (including data augmentation for LLM/World Models) **requires a Commercial License.**
 4. **Acquisition/Investment:** For inquiries regarding full IP acquisition, strategic investment, or dedicated implementation support, contact the address above.
@@ -18,7 +18,7 @@
 ## ⚠️ The "Physical Default" Challenge
 NVIDIA's $4T+ valuation is increasingly built on the promise of "Digital Twins" and "Embodied AI." However, the underlying physics engines (Isaac Sim/PhysX) suffer from **Hamiltonian Drift**—a structural **"Physical Default."**
 
-* **The Waste:** Up to 90% of GPU compute in large-scale simulation is wasted on suppressing discretization artifacts and numerical hallucinations.
+* **The Waste:** The majority of stabilization-related compute is wasted on suppressing discretization artifacts and numerical hallucinations.
 * **The Debt:** AI models trained on "hallucinated physics" develop **"Physical Debt,"** leading to catastrophic failure during Sim-to-Real transfer.
 
 This plugin introduces the **Octonion Temporal Semantics Layer**—the first engineering solution to mitigate structural drift without slowing down the simulation speed.
@@ -50,7 +50,7 @@ The v0.3 update transitions the plugin from a passive diagnostic tool to an **Ac
 * **The Solution:**
     1.  **Detection:** Octonion semantics detect the temporal drift magnitude in real-time.
     2.  **Intervention:** The plugin dynamically scales **PhysX Solver Iterations** (up to 24x) and injects **Adaptive Joint Damping**.
-    3.  **Result:** Jitter is "flattened" instantly. The motion becomes physically smooth.
+    3.  **Result:** Jitter is visibly suppressed within a few simulation steps. The motion becomes physically smooth.
 
 ### 🛠️ How to Reproduce
 1.  **Generate Scene:** Run `scripts/create_demo_scene.py` in Isaac Sim Script Editor.
