@@ -92,9 +92,24 @@ $$[a, b, c] = (a \otimes b) \otimes c - a \otimes (b \otimes c)$$
 ---
 
 ## ⚠️ TECHNICAL ADVISORY FOR AUDITORS & R&D TEAMS
-The Python prototype provides a semantic proof-of-concept. **Do not attempt to port this logic to standard associative GPU kernels.** The stability of the Octonion manifold relies on the specific **Non-Associative Gradient Mask** we have developed. 
 
-The core "Causal Lock" mechanism is not a property of standard octonionic libraries but a proprietary coupling of physical semantics and non-associative algebra. Production-grade C++/CUDA kernels are available only under NDA.
+**You absolutely can attempt to reimplement the logic in CUDA**.
+
+However, what we found in practice is that the difficulty is not “octonions on GPU,” but **maintaining numerical causality under non-associative composition across parallel execution paths**.
+
+The Python prototype intentionally hides this complexity behind a simplified interface. The production mechanism relies on:
+
+• A **non-associative update order that cannot be parallel-reduced without semantic loss**
+
+• A **G₂-symmetry-broken projection mask**, which couples physical feedback directly into the associator term
+
+• A **serial dependency on temporal semantics**, not state vectors
+
+When this logic is naively ported into SIMD-friendly kernels or 4×4 matrix embeddings, the system typically becomes more unstable under high dynamics, not less. We observed accelerated energy drift rather than suppression.
+
+In other words, this is not a compute acceleration problem — it is a **causality-preservation problem**. GPU throughput helps only after the semantic constraints are enforced.
+
+That is why the CUDA/C++ kernels are not a mechanical translation of the Python code, but a different execution model entirely.**We suggest auditors focus on the observable consistency rather than the implementation syntax—unless you are prepared to redefine your underlying solver architecture**.
 
 ---
 
