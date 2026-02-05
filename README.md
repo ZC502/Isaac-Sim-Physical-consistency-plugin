@@ -127,3 +127,11 @@ That is why the CUDA/C++ kernels are not a mechanical translation of the Python 
 
 ## 📜 Disclaimer
 This project proposes a computational and temporal semantics enhancement. It does not redefine physical laws but provides the mathematical framework to represent them accurately in a discrete, digital world. **The era of "Physical Hallucinations" is over.**
+
+---
+
+**Scientific annotation**:
+
+We thank early auditors for stress-testing the system.
+
+Empirically, **physical debt behaves as a structural constant** under discrete solvers, not a free variable. As a result, the causality threshold is not exposed as a user-tunable parameter.
