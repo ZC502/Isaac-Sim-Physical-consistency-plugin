@@ -16,12 +16,15 @@
 ---
 
 ## ⚠️ The "Physical Default" Challenge
-NVIDIA's $4T+ valuation is increasingly built on the promise of "Digital Twins" and "Embodied AI." However, the underlying physics engines (Isaac Sim/PhysX) suffer from **Hamiltonian Drift**—a structural **"Physical Default."**
+Modern digital twin and embodied AI pipelines rely heavily on discrete-time physics engines.
+However, it is well-known in numerical simulation that long-horizon integration under high dynamics
+can accumulate structural drift (e.g., Hamiltonian drift), which is difficult to observe directly.
 
 * **The Waste:** The majority of stabilization-related compute is wasted on suppressing discretization artifacts and numerical hallucinations.
 * **The Debt:** AI models trained on "hallucinated physics" develop **"Physical Debt,"** leading to catastrophic failure during Sim-to-Real transfer.
 
-This plugin introduces the **Octonion Temporal Semantics Layer**—the first engineering solution to mitigate structural drift without slowing down the simulation speed.
+This plugin introduces the **Octonion Temporal Semantics Layer**—an engineering framework exploring how non-associative temporal semantics
+can be used to detect and react to structural drift in discrete simulators.
 
 ---
 
@@ -81,6 +84,11 @@ $$q_{new} = q_{current} \otimes \Delta q(\Delta t, u, \omega)$$
 ### The Power of Symmetry Breaking
 Unlike standard algebraic models that seek $G_2$ group invariance, this implementation **intentionally breaks $G_2$ symmetry**. By coupling physical semantics into the non-associative imaginary components, we enforce a **Causal Lock**. Standard associative $4 \times 4$ matrices are too symmetric to detect the "direction of drift"; our non-associative layer forces the simulation to remain "physically honest."
 
+Engineering note:
+This symmetry breaking is not a physical claim, but an algorithmic choice.
+The purpose is to introduce a directional sensitivity to update ordering,
+which standard associative representations lack.
+
 ### Audit Metrics: The Associator Diagnostic
 We utilize the **Associator** $[a, b, c]$ as the ultimate metric for "Physical Hallucinations":
 
@@ -126,7 +134,9 @@ That is why the CUDA/C++ kernels are not a mechanical translation of the Python 
 ---
 
 ## 📜 Disclaimer
-This project proposes a computational and temporal semantics enhancement. It does not redefine physical laws but provides the mathematical framework to represent them accurately in a discrete, digital world. **The era of "Physical Hallucinations" is over.**
+This project proposes a computational and temporal semantics enhancement. It does not redefine physical laws but provides the mathematical framework to represent them accurately in a discrete, digital world. This work aims to make certain classes of numerical inconsistency observable
+and controllable in practice.
+
 
 ---
 
