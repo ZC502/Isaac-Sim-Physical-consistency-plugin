@@ -1,3 +1,117 @@
+**v0.4 — From Stabilization to Auditing (Scientific Release)**
+
+**Strategic Note**:  
+This release marks a conceptual transition from *demonstration-driven stabilization* to **numerical causality auditing**.  
+The Octonion layer is now explicitly framed as an **observer of order-dependent numerical drift**, not a controller.
+
+---
+
+### Non-Associativity as an Observable, Not a Controller
+
+In v0.4, the octonion formulation is used purely as an *observability layer*.
+
+Given identical physical inputs, we compare two update paths:
+\[
+(q \otimes \Delta q) \quad \text{vs.} \quad (\Delta q \otimes q)
+\]
+
+Their difference defines an **associator**, which vanishes in ideal associative processes but emerges under discrete, asynchronous solvers.
+
+Importantly:
+- This signal is **not derived from velocity, damping, or energy**
+- It captures **path-dependent numerical drift** invisible to scalar heuristics
+- The observer has **no inherent control authority**
+
+Any intervention remains explicitly downstream and optional.
+
+---
+
+## Why Associativity Becomes a Liability in Embodied AI
+
+Associativity is a valid property of continuous physical laws, but **not of their discrete numerical realization**.
+
+In embodied systems, error is not random noise but a **history-dependent process** shaped by update ordering, contact resolution, and solver parallelism.
+
+By enforcing associative representations (e.g., matrices or quaternions) on non-associative numerical processes, simulators erase causal history.
+This is a key reason why policies trained in simulation fail under real-world contact, latency, and concurrency.
+
+---
+
+## Why This Project Does Not Provide a Final Controller
+
+This repository intentionally does **not** propose a new controller or policy.
+
+Controllers are downstream design choices; **observability is an upstream requirement**.
+Without a signal that distinguishes physical dynamics from numerical artifacts, any controller—learned or hand-tuned—will overfit simulator-specific hallucinations.
+
+Our position is that **auditing numerical causality must precede control optimization**, especially for L4/L5 embodied systems.
+
+This project therefore defines an **audit standard**, not a policy baseline.
+
+---
+
+## Negative Result (v0.4-C)
+
+### When the Octonion Observer Does Not Outperform Classical Heuristics
+
+In some benchmark regimes, the Octonion-based observer does not yield superior stabilization compared to well-tuned velocity-based gain scheduling.
+
+This outcome is expected and informative.
+
+When numerical integration error is approximately isotropic and order-independent, associativity violations collapse to noise.
+The observer correctly reports near-zero associator magnitude, indicating that the solver behaves effectively associative.
+
+This negative result demonstrates that the method does **not hallucinate instability**.
+It activates only when order-dependence is structurally present, validating its role as a **selective diagnostic**, not a universal stabilizer.
+
+---
+
+## Project Scope and Positioning
+
+This repository is intended for:
+- Researchers auditing **Sim-to-Real failure modes**
+- Engineers diagnosing **order-dependent numerical drift**
+- Reviewers evaluating **physical debt** in embodied AI pipelines
+
+It is **not** a drop-in replacement for controllers, solvers, or RL algorithms.
+
+---
+
+**Scientific annotation**:
+
+We thank early auditors for rigorous stress-testing.
+
+Empirically, *physical debt behaves as a structural constant under discrete solvers, not a free variable*.
+As a result, causality thresholds are not exposed as user-tunable parameters.
+
+---
+
+**Appendix: Common Critiques & Technical Rebuttals**
+
+（Addressed to Engineering Auditors)
+
+**Q1: "Non-associativity is just error. Why not use Energy or Lyapunov functions?"**
+
+**Response**: Energy and velocity are **state variables**, measuring magnitude. The Octonion Associator is a **process variable**, measuring path-dependency. In discrete, parallel solvers, error is shaped by update order, not just state limits. While Energy tells you how much error exists, the Associator reveals how it accumulated via the solver's scheduling sequence. It is the minimal metric for detecting **order-sensitive causality** that scalar functions inherently miss.
+
+**Q2: "Ultimately, you just add damping. Is this just fancy Gain Scheduling?"**
+
+**Response**: This conflates **Control** (the fix) with **Auditing** (the diagnosis). We do not claim damping is novel. We claim that triggering intervention based on **numerical consistency** is novel. Traditional scheduling assumes Instability $\approx$ High Velocity. We provide an orthogonal signal: **Instability $\approx$ Order-Dependence**. Using damping to resolve the drift is an engineering choice; the discovery of the drift signal itself is the scientific contribution.
+
+**Q3: "Physical rotations (SO3) are associative. Are you confusing Math with Physics?"**
+
+**Response**: We do not dispute that continuous physical laws are associative. We dispute that **discrete, asynchronous solvers** preserve this property. In parallel constraint resolution, $(A \circ B) \circ C \neq A \circ (B \circ C)$ due to floating-point drift and thread scheduling. Our method does not introduce non-associativity; it explicitly **exposes** the pre-existing causal rupture caused by the simulation engine, which standard quaternions mathematically mask.
+
+**Q4: "Information Theory says you can't extract new info from just angular velocity."**
+
+**Response**: We do not analyze the state in isolation; we analyze the **divergence of permutation paths**. The Associator measures the difference between update orders ($q \otimes \Delta q$ vs $\Delta q \otimes q$). This is not information creation, but **information unmixing**: separating legitimate physical dynamics from numerical artifacts. It acts as a **differential diagnostic** for the solver's internal consistency, detecting artifacts that scalar sensors cannot distinguish from real motion.
+
+**Q5: "If Mode C (Octonion) performs the same as Mode B (Scalar) in benchmarks, isn't it useless?"**
+
+**Response**: No. If the Observer always triggered, it would be a black-box controller. Its silence during associative regimes is a **validation feature**, proving the method does not hallucinate instability. It activates only when structural order-dependence exists. In safety-critical Embodied AI, a "**Failure Mode Detector**" that definitively confirms when a simulation is trustworthy is as valuable as the control policy itself.
+
+---
+
 **v0.3.1 — The "Reality Bridge" Integration (Scientific Release)**
 
 **Strategic Note**: This update marks the transition from **Logic Validation** to **Live Physics Auditing**. We have deprecated all static placeholders used for isolated unit testing. The Octonion-based temporal semantics core is now natively bridged to real-time **PhysX Articulation states**.
@@ -9,6 +123,8 @@
 - **Hamiltonian Proxy**: By monitoring the associator $[a, b, c] \neq 0$, we provide the first observable metric for **Structural Numerical Stress** in discrete-time manifolds.
 
 This repository is intended for researchers and auditors evaluating "Physical Debt" in high-dynamics Embodied AI. **Stop observing the drift; start compensating for the collapse**.
+
+---
 
 **Isaac-Sim-Physical-consistency-plugin**
 **Octonion-Based Temporal Semantics Layer for Robotics & Embodied AI**
@@ -149,11 +265,3 @@ That is why the CUDA/C++ kernels are not a mechanical translation of the Python 
 This project proposes a computational and temporal semantics enhancement. It does not redefine physical laws but provides the mathematical framework to represent them accurately in a discrete, digital world. This work aims to make certain classes of numerical inconsistency observable
 and controllable in practice.
 
-
----
-
-**Scientific annotation**:
-
-We thank early auditors for stress-testing the system.
-
-Empirically, **physical debt behaves as a structural constant** under discrete solvers, not a free variable. As a result, the causality threshold is not exposed as a user-tunable parameter.
