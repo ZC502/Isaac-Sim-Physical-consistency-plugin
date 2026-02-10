@@ -3,12 +3,15 @@ from .delta_q import compute_delta_q
 import numpy as np
 import carb  
 
+
 class OctonionScheduler:
     """
     Temporal semantics scheduler based on octonion update.
 
-    get_drift_magnitude() is the ONLY signal exposed to the PhysX feedback loop.
-    It defines when and how the solver intervention is triggered.
+    v0.4:
+    - Acts as a pure observer
+    - Drift is defined ONLY by non-associativity (associator)
+    - No control authority, no hidden gain scheduling
     """
 
     def __init__(self):
@@ -16,8 +19,14 @@ class OctonionScheduler:
 
         # External physical signal (fed by extension.py)
         self._external_omega = None
-        
-        # Maximum number of sub-steps (to prevent computational explosion)
+
+        # v0.4: execution order signal (+1 or -1)
+        self._order_signal = 1.0
+
+        # Last measured associator (for diagnostics)
+        self._last_associator = np.zeros(8, dtype=float)
+
+        # Maximum number of sub-steps
         self.max_substeps = 8
         self.omega_threshold = 5.0
 
@@ -28,7 +37,6 @@ class OctonionScheduler:
         omega_norm = self._read_angular_velocity_norm()
         control = self._read_control()
 
-        # Determine semantic sub-steps based on dynamic intensity
         substeps = self._compute_substeps(omega_norm)
         sub_dt = dt / substeps
 
@@ -39,53 +47,78 @@ class OctonionScheduler:
                 omega_norm=omega_norm,
             )
 
-            # Basic consistency guardrail
             if abs(dq.norm() - 1.0) > 1e-3:
                 dq.normalize()
 
-            # Non-commutative semantic update
-            self.q = self.q * dq
+            # -------------------------------------------------
+            # v0.4 Core: non-associative comparison
+            # -------------------------------------------------
 
-        # Global stabilization
+            # Path 1: standard update
+            q_forward = self.q * dq
+
+            # Path 2: permuted update (same energy, different order)
+            q_permuted = dq * self.q
+
+            # Associator: order-dependent discrepancy
+            assoc = q_forward - q_permuted
+            self._last_associator = assoc.i.copy()
+
+            # Choose canonical update (observer does NOT control)
+            self.q = q_forward
+
         self.q.normalize()
 
         if substeps > 1:
             carb.log_warn(
-                f"[Octonion-Causality] Dynamic Spike! "
-                f"Scaling to {substeps} sub-steps "
+                f"[Octonion-v0.4] High dynamics: {substeps} substeps "
                 f"(Omega={omega_norm:.2f})"
             )
 
     # ---------------------------------------------------------
-    # Semantic diagnostics
+    # Diagnostic outputs (Observer ONLY)
     # ---------------------------------------------------------
-    def get_drift_magnitude(self) -> float:
+    def get_associator_magnitude(self) -> float:
         """
-        Returns a scalar representing temporal inconsistency
-        detected by octonion evolution (i6 component).
+        v0.4:
+        Drift is defined as the magnitude of the associator.
+        This captures order-dependence in numerical integration.
         """
-        return float(abs(self.q.i[6]))
+        return float(np.linalg.norm(self._last_associator))
 
     # ---------------------------------------------------------
-    # External physical signal bridge
+    # External signal bridges
     # ---------------------------------------------------------
     def set_external_omega(self, omega_norm: float):
-        """
-        Inject real-time angular velocity magnitude
-        from the physics engine.
-        """
         self._external_omega = float(omega_norm)
 
+    def set_order_signal(self, signal: float):
+        """
+        signal ∈ {+1, -1}
+        Encodes execution order without modifying physics.
+        """
+        self._order_signal = float(signal)
+
     def _read_angular_velocity_norm(self) -> float:
-        """
-        Prefer external physical signal if provided.
-        """
         if self._external_omega is not None:
             return self._external_omega
         return 0.0
 
     # ---------------------------------------------------------
-    # Placeholder control hook
+    # Substep logic
+    # ---------------------------------------------------------
+    def _compute_substeps(self, omega_norm: float) -> int:
+        if omega_norm < self.omega_threshold:
+            return 1
+
+        scale = min(
+            int(np.ceil(omega_norm / self.omega_threshold)),
+            self.max_substeps,
+        )
+        return max(1, scale)
+
+    # ---------------------------------------------------------
+    # Placeholder control hook (unused)
     # ---------------------------------------------------------
     def _read_control(self):
         return 0.0
