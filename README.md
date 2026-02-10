@@ -1,3 +1,15 @@
+**v0.3.1 — The "Reality Bridge" Integration (Scientific Release)**
+
+**Strategic Note**: This update marks the transition from **Logic Validation** to **Live Physics Auditing**. We have deprecated all static placeholders used for isolated unit testing. The Octonion-based temporal semantics core is now natively bridged to real-time **PhysX Articulation states**.
+
+**Core Advancement**:
+
+- **Dynamic Observability**: Replaced static probes with a numpy-powered **Real-time Velocity Bridge**. The $i_6$ drift signal is now a direct derivative of live simulation entropy.
+- **Closed-Loop Causality Locking**: The intervention logic (Solver Scaling & Adaptive Damping) is no longer a "demonstration script" but a **Constraint-Aware Stabilizer** triggered by non-associative causality detection.
+- **Hamiltonian Proxy**: By monitoring the associator $[a, b, c] \neq 0$, we provide the first observable metric for **Structural Numerical Stress** in discrete-time manifolds.
+
+This repository is intended for researchers and auditors evaluating "Physical Debt" in high-dynamics Embodied AI. **Stop observing the drift; start compensating for the collapse**.
+
 **Isaac-Sim-Physical-consistency-plugin**
 **Octonion-Based Temporal Semantics Layer for Robotics & Embodied AI**
 
