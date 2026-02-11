@@ -1,9 +1,11 @@
 [package]
-title = "Octonion Temporal Semantics"
-description = "Octonion-based temporal semantics layer for physics simulation"
-version = "0.1.0"
+name = "OctonionTimeExtension"
+
+title = "Octonion Temporal Semantics (v0.4-C)"
+description = "Non-associative temporal semantics observer for physics simulation (Order-Permutation Audit)"
+version = "0.4.0"
 category = "Simulation"
-keywords = ["physics", "octonion", "temporal", "debug"]
+keywords = ["physics", "octonion", "temporal", "audit", "non-associative"]
 readme = "README.md"
 
 [dependencies]
@@ -11,5 +13,6 @@ readme = "README.md"
 "omni.physx" = {}
 
 [[python.module]]
-name = "octonion_semantics"
+name = "octonion_time.octonion_time"
+
 
