@@ -9,6 +9,7 @@ from omni.isaac.core.utils.prims import define_prim
 from omni.isaac.core.articulations import Articulation
 from pxr import UsdPhysics, PhysxSchema, Gf
 import numpy as np
+import omni.kit.app
 
 # =====================================================
 # Experimental Modes (v0.4)
@@ -41,14 +42,10 @@ class OrderPermutationInjector:
         self.flip = not self.flip
 
     def _A_then_B(self):
-        self.art.apply_action(
-            {"joint1": 10.0, "joint2": -10.0}
-        )
+        self.art.apply_action({"joint1": 10.0, "joint2": -10.0})
 
     def _B_then_A(self):
-        self.art.apply_action(
-            {"joint2": -10.0, "joint1": 10.0}
-        )
+        self.art.apply_action({"joint2": -10.0, "joint1": 10.0})
 
 # =====================================================
 # Scene Construction
@@ -111,6 +108,10 @@ articulation = Articulation(ROOT)
 world.scene.add(articulation)
 injector = OrderPermutationInjector(articulation)
 
+# Fetch Octonion extension instance
+ext_manager = omni.kit.app.get_app().get_extension_manager()
+oct_ext = ext_manager.get_extension_instance("OctonionTimeExtension")
+
 print("[v0.4] Cantilever arm ready. Running experiment mode:", EXPERIMENT_MODE)
 
 # =====================================================
@@ -130,4 +131,5 @@ for _ in range(6000):
 
     elif EXPERIMENT_MODE == MODE_OCTONION_OBSERVER:
         injector.apply()
- 
+        if oct_ext:
+            oct_ext.set_order_flip(injector.flip)
