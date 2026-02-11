@@ -1,7 +1,7 @@
 from .octonion import Octonion
 from .delta_q import compute_delta_q
 import numpy as np
-import carb  
+import carb
 
 
 class OctonionScheduler:
@@ -9,24 +9,23 @@ class OctonionScheduler:
     Temporal semantics scheduler based on octonion update.
 
     v0.4:
-    - Acts as a pure observer
-    - Drift is defined ONLY by non-associativity (associator)
-    - No control authority, no hidden gain scheduling
+    - Pure observer
+    - Drift defined ONLY by non-associativity (associator)
+    - No control authority, no gain scheduling
     """
 
     def __init__(self):
         self.q = Octonion()
 
-        # External physical signal (fed by extension.py)
+        # External physical signal
         self._external_omega = None
 
-        # v0.4: execution order signal (+1 or -1)
+        # v0.4: execution order tag (+1 / -1)
         self._order_signal = 1.0
 
-        # Last measured associator (for diagnostics)
+        # Last measured associator
         self._last_associator = np.zeros(8, dtype=float)
 
-        # Maximum number of sub-steps
         self.max_substeps = 8
         self.omega_threshold = 5.0
 
@@ -50,21 +49,14 @@ class OctonionScheduler:
             if abs(dq.norm() - 1.0) > 1e-3:
                 dq.normalize()
 
-            # -------------------------------------------------
-            # v0.4 Core: non-associative comparison
-            # -------------------------------------------------
-
-            # Path 1: standard update
+            # Path-dependent comparison (core audit)
             q_forward = self.q * dq
-
-            # Path 2: permuted update (same energy, different order)
             q_permuted = dq * self.q
 
-            # Associator: order-dependent discrepancy
             assoc = q_forward - q_permuted
             self._last_associator = assoc.i.copy()
 
-            # Choose canonical update (observer does NOT control)
+            # Observer chooses canonical update (no control)
             self.q = q_forward
 
         self.q.normalize()
@@ -72,22 +64,21 @@ class OctonionScheduler:
         if substeps > 1:
             carb.log_warn(
                 f"[Octonion-v0.4] High dynamics: {substeps} substeps "
-                f"(Omega={omega_norm:.2f})"
+                f"(Omega={omega_norm:.2f}, OrderTag={self._order_signal:+.0f})"
             )
 
     # ---------------------------------------------------------
-    # Diagnostic outputs (Observer ONLY)
+    # Diagnostic output
     # ---------------------------------------------------------
     def get_associator_magnitude(self) -> float:
         """
-        v0.4:
-        Drift is defined as the magnitude of the associator.
-        This captures order-dependence in numerical integration.
+        Drift = ||associator||
+        Captures order-dependence in numerical integration.
         """
         return float(np.linalg.norm(self._last_associator))
 
     # ---------------------------------------------------------
-    # External signal bridges
+    # External bridges
     # ---------------------------------------------------------
     def set_external_omega(self, omega_norm: float):
         self._external_omega = float(omega_norm)
@@ -95,7 +86,7 @@ class OctonionScheduler:
     def set_order_signal(self, signal: float):
         """
         signal ∈ {+1, -1}
-        Encodes execution order without modifying physics.
+        Used for audit alignment & logging only.
         """
         self._order_signal = float(signal)
 
@@ -118,7 +109,7 @@ class OctonionScheduler:
         return max(1, scale)
 
     # ---------------------------------------------------------
-    # Placeholder control hook (unused)
+    # Placeholder control hook
     # ---------------------------------------------------------
     def _read_control(self):
         return 0.0
