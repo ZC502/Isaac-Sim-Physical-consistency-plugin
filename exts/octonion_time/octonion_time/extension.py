@@ -4,7 +4,7 @@ import omni.ext
 import omni.physx
 import omni.usd
 
-from pxr import UsdPhysics
+from pxr import UsdPhysics, PhysxSchema
 from .scheduler import OctonionScheduler
 
 
@@ -35,13 +35,13 @@ class OctonionTimeExtension(omni.ext.IExt):
 
         self.base_damping = 0.0
         self.max_damping = 50.0
+
         self._managed_joints = []
+        self._articulation = None
         self._demo_bound = False
 
-        self._articulation = None
-
-        # v0.4: order permutation signal
-        self._order_flip = 1.0
+        # v0.4: order permutation signal (observer only)
+        self._order_flip = False
 
         self.scheduler = OctonionScheduler()
 
@@ -57,7 +57,6 @@ class OctonionTimeExtension(omni.ext.IExt):
     def set_order_flip(self, flip: bool):
         self._order_flip = bool(flip)
 
-
     # ---------------------------------------------------------
     # PhysX step callback
     # ---------------------------------------------------------
@@ -70,7 +69,7 @@ class OctonionTimeExtension(omni.ext.IExt):
         if not self._demo_bound:
             self._try_bind_demo_joints()
 
-        # v0.4-C: pure associator drift
+        # v0.4-C: pure associator drift (observer only)
         drift = self.scheduler.get_associator_magnitude()
 
         if self.enable_intervention:
@@ -84,11 +83,11 @@ class OctonionTimeExtension(omni.ext.IExt):
         omega_norm = self._read_angular_velocity_norm()
         self.scheduler.set_external_omega(omega_norm)
 
-        # v0.4-C: expose order only (no physics modification)
-        self.scheduler.set_order_signal(self._order_flip)
+        # v0.4-C: expose execution order ONLY (no physics effect)
+        self.scheduler.set_order_signal(-1.0 if self._order_flip else 1.0)
 
     # ---------------------------------------------------------
-    # Articulation bridge
+    # Articulation & Joint binding
     # ---------------------------------------------------------
     def _bind_articulation_if_needed(self):
         if self._articulation is not None:
@@ -103,9 +102,29 @@ class OctonionTimeExtension(omni.ext.IExt):
                 try:
                     self._articulation = self._physx.get_articulation(prim.GetPath())
                     carb.log_info(f"[Octonion] Articulation bound at {prim.GetPath()}")
+                    self._bind_managed_joints(stage)
+                    self._demo_bound = True
                     return
                 except Exception as e:
                     carb.log_warn(f"[Octonion][WARN] Articulation bind failed: {e}")
+
+    def _bind_managed_joints(self, stage):
+        """
+        Explicitly bind joint drive APIs for damping feedback.
+        Safe even if intervention is disabled.
+        """
+        self._managed_joints.clear()
+
+        for prim in stage.Traverse():
+            if prim.HasAPI(PhysxSchema.PhysxJointAPI):
+                api = PhysxSchema.PhysxJointAPI(prim)
+                drive = api.GetDrive("angular")
+                if drive:
+                    self._managed_joints.append(drive)
+
+        carb.log_info(
+            f"[Octonion] Managed joints bound: {len(self._managed_joints)}"
+        )
 
     def _read_angular_velocity_norm(self) -> float:
         self._bind_articulation_if_needed()
