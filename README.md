@@ -77,6 +77,24 @@ It is **not** a drop-in replacement for controllers, solvers, or RL algorithms.
 
 ---
 
+**How to Prove This Observer Is Useless (and Why That Still Matters)**
+
+To maintain scientific integrity, we provide a direct path to falsify the utility of the Octonion Observer.
+
+1. **The Falsification Test** If you run the **v0.4 Order-Permutation Benchmark** and observe the following:
+- **Result A**: The system diverges at the exact same frame regardless of torque application order.
+- **Result B**: The Octonion Associator ($i_6$) remains below the noise floor ($1e-6$) even as the robot begins to jitter.
+- **Result C**: A simple L2-norm of angular velocity flags the instability at the same timestamp as the Octonion drift signal.
+
+  **...then the Octonion Observer is redundant for your specific simulation environment**.
+2. **What This "Failure" Discovers** If you prove the observer is "useless" in your setup, you haven't just debunked a plugin; you have discovered a "**Numerically Associative Regime**". This confirms that:
+- Your solver's constraint partitioning is effectively commutative.
+- Your parallel threading model is not introducing causal debt at your current time-step.
+- Your system is safe for standard scalar-based Reinforcement Learning.
+3. **Why We Invite This Attack** We prefer a validated "No" over a hallucinated "Yes." If the community finds that the Octonion signal is zero across 90% of industrial use-cases, we have successfully mapped the **safe boundaries of the Sim-to-Real gap**.
+
+---
+
 **Scientific annotation**:
 
 We thank early auditors for rigorous stress-testing.
