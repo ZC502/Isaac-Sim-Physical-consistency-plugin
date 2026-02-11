@@ -55,7 +55,8 @@ class OctonionTimeExtension(omni.ext.IExt):
     # External order signal (called by demo script)
     # ---------------------------------------------------------
     def set_order_flip(self, flip: bool):
-        self._order_flip = 1.0 if flip else -1.0
+        self._order_flip = bool(flip)
+
 
     # ---------------------------------------------------------
     # PhysX step callback
