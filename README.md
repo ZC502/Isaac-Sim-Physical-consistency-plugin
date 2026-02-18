@@ -1,3 +1,121 @@
+**Non-Associative Residual Hypothesis (NARH)**
+
+**1. Setting**
+
+Consider a rigid-body simulation system defined by:
+
+- State space $S \subset \mathbb{R}^n$
+- Associative update operator $\Phi \Delta t : S \to S$
+- Parallel constraint resolution composed of sub-operators $\{\Psi_i\}_{i=1}^k$
+
+	​
+The simulator implements a discrete update:
+
+$$ s_{t+1} = \Psi_{\sigma(k)} \circ \cdots \circ \Psi_{\sigma(1)} (s_t) $$
+
+
+
+where 𝜎 is an execution order induced by:
+
+- constraint partitioning
+- thread scheduling
+- contact batching
+- solver splitting
+
+Each $\Psi_i$ is individually well-defined, but their composition order may vary.
+
+---
+
+**2. Order Sensitivity**
+
+Although each operator $\Psi_i$ belongs to an associative algebra (e.g., matrix multiplication, quaternion composition), the **composition of numerically approximated operators** may satisfy:
+
+$$(\Psi_a \circ \Psi_b) \circ \Psi_c \neq \Psi_a \circ (\Psi_b \circ \Psi_c)$$
+
+due to:
+
+- finite precision arithmetic
+- projection steps
+- iterative convergence truncation
+- asynchronous execution
+
+Define the discrete associator:
+
+$$
+A(a,b,c;s) = \bigl( (\Psi_a \circ \Psi_b) \circ \Psi_c \bigr)(s) - \bigl( \Psi_a \circ (\Psi_b \circ \Psi_c) \bigr)(s)
+$$
+
+
+---
+
+**3. Definition: Non-Associative Residual**
+
+We define the **Non-Associative Residual (NAR)** at state $s_t$ as:
+
+$R_t = \lVert A(a,b,c; s_t) \rVert$
+
+for a chosen triple of sub-operators representative of contact or constraint updates.
+
+This residual measures **path-dependence induced by discrete solver ordering**, not algebraic non-associativity of the state representation.
+
+---
+
+**4. Hypothesis (NARH)**
+
+In high-interaction-density regimes (e.g., contact-rich robotics, high-speed manipulation), the Non-Associative Residual $R_t$ becomes non-negligible relative to scalar stability metrics, and accumulates over time as a structured drift term.
+
+Formally, there exists a regime such that:
+
+$\sum_{t=0}^{T} R_t \not\approx 0$
+
+even when:
+
+$\Vert s_{t+1} - s_t \Vert$ remains bounded.
+
+---
+
+**5. Interpretation**
+
+This hypothesis does **not** claim:
+
+- that simulators are mathematically invalid,
+- that associative algebras are incorrect,
+- or that hardware tiling causes topological inconsistency.
+
+Instead, it asserts:
+
+Discrete parallel constraint resolution introduces a measurable order-dependent residual that is not explicitly encoded in the state space.
+
+This residual may contribute to:
+
+- sim-to-real divergence,
+- policy brittleness,
+- instability under reordering of equivalent control inputs.
+
+---
+
+**6. Falsifiability**
+
+NARH is falsified if:
+
+1. $R_t$​ remains within numerical noise across interaction densities.
+2. Reordering constraint application yields statistically indistinguishable trajectories.
+3. Scalar metrics (e.g., kinetic energy norm, velocity norm) detect instability earlier or equally compared to any associator-derived signal.
+
+---
+
+**7. Research Implication**
+
+If validated, NARH suggests that:
+
+- Order sensitivity is a structural property of discrete solvers.
+- Additional diagnostic signals (e.g., associator magnitude) may serve as early-warning indicators.
+- Embodied AI training in simulation may implicitly depend on hidden order-stability assumptions.
+
+If invalidated, the experiment establishes an empirically order-invariant regime — a valuable boundary characterization of solver behavior.
+
+---
+
 **v0.4 — From Stabilization to Auditing (Scientific Release)**
 
 **Strategic Note**:  
@@ -144,8 +262,8 @@ This repository is intended for researchers and auditors evaluating "Physical De
 
 ---
 
-**Isaac-Sim-Physical-consistency-plugin**
-**Octonion-Based Temporal Semantics Layer for Robotics & Embodied AI**
+**NADF: Non-Associative Diagnostic Framework for High-Fidelity Embodied AI**
+**Quantifying the Numerical Causal Debt in Parallel Physics Solvers.**
 
 
 
@@ -166,8 +284,8 @@ Modern digital twin and embodied AI pipelines rely heavily on discrete-time phys
 However, it is well-known in numerical simulation that long-horizon integration under high dynamics
 can accumulate structural drift (e.g., Hamiltonian drift), which is difficult to observe directly.
 
-* **The Waste:** The majority of stabilization-related compute is wasted on suppressing discretization artifacts and numerical hallucinations.
-* **The Debt:** AI models trained on "hallucinated physics" develop **"Physical Debt,"** leading to catastrophic failure during Sim-to-Real transfer.
+* **The Computational Efficiency Deficit:** The majority of stabilization-related compute is wasted on suppressing discretization artifacts and numerical hallucinations.
+* **Structural Simulation-to-Reality (S2R) Divergence:** AI models trained on "hallucinated physics" develop **"Physical Debt,"** leading to catastrophic failure during Sim-to-Real transfer.
 
 This plugin introduces the **Octonion Temporal Semantics Layer**—an engineering framework exploring how non-associative temporal semantics
 can be used to detect and react to structural drift in discrete simulators.
@@ -249,7 +367,7 @@ $$[a, b, c] = (a \otimes b) \otimes c - a \otimes (b \otimes c)$$
 
 **You absolutely can attempt to reimplement the logic in CUDA**.
 
-However, what we found in practice is that the difficulty is not “octonions on GPU,” but **maintaining numerical causality under non-associative composition across parallel execution paths**.
+However, what we found in practice is that the difficulty is not “octonions on GPU,” but **maintaining numerical causality under non-associative composition across parallel execution paths**.Standard $8 \times 8$ or $16 \times 16$ tensor tiling in modern GPUs accelerates associative matrix ops but remains 'blind' to the associator $[a, b, c]$. Attempting to force-parallelize the non-associative update path without a custom reduction kernel will likely amplify the residual $R_t$ rather than suppress it.
 
 The Python prototype intentionally hides this complexity behind a simplified interface. The production mechanism relies on:
 
@@ -283,3 +401,13 @@ That is why the CUDA/C++ kernels are not a mechanical translation of the Python 
 This project proposes a computational and temporal semantics enhancement. It does not redefine physical laws but provides the mathematical framework to represent them accurately in a discrete, digital world. This work aims to make certain classes of numerical inconsistency observable
 and controllable in practice.
 
+---
+
+**Call for Benchmarks: The NARH Fidelity Challenge**
+
+We invite research teams with access to **Blackwell/Hopper clusters** to run our v0.4 diagnostic probe.
+- **The Metric**: Report the $R_t$ (Non-Associative Residual) magnitude in high-density contact scenarios.
+- **The Goal**: To map the "Order-Invariant Boundaries" of current parallel solvers.
+- **Submission**: If your results show $R_t < 1e-6$ under 100+ simultaneous contacts, we will formally acknowledge your solver's associative integrity in our next update.
+
+Silence is a data point; the lack of a counter-proof is the strongest validation.
