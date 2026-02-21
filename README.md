@@ -391,6 +391,95 @@ That is why the CUDA/C++ kernels are not a mechanical translation of the Python 
 
 ---
 
+🧰 **v0.4.1 Diagnostic Toolbox (Regime Disambiguation)**
+
+To improve falsifiability and avoid over-attribution, v0.4.1 introduces a **Diagnostic Toolbox** designed to distinguish three competing explanations for order-sensitive residuals:
+
+- **Mechanism A — Numerical Attenuation**
+
+Residuals are suppressed by stabilization heuristics and remain within numerical noise.
+
+- **Mechanism B — Regime-Dependent Amplification**
+
+Residuals are negligible in sparse scenes but grow nonlinearly under high interaction density.
+
+- **Mechanism C — Observer Misalignment**
+Measured drift arises from instrumentation mismatch rather than solver dynamics.
+
+This toolbox does **not assume** which mechanism dominates. Its purpose is purely diagnostic.
+
+---
+
+**Step 0 — Noise Baseline Calibration**
+
+Before any perturbation test, the system estimates an empirical noise floor:
+
+
+$$ R_{\text{noise}} = \text{median}(R_t) + 3\sigma $$
+
+
+where $R_t$​ is the associator magnitude under **fixed-order, no-perturbation** conditions.
+
+Interpretation:
+
+- $$R_t < R_{\text{noise}}$$: consistent with numerical noise
+- $$R_t ≥ R_{\text{noise}}$$: order-sensitive residual detected
+
+This step prevents conflating floating-point noise with structural effects.
+
+---
+
+**Step 1 — Density Scaling Sweep**
+
+We evaluate how the residual scales with scene complexity by automatically generating:
+
+- N = 1 cantilever
+- N = 10 cantilevers
+- N = 100 cantilevers
+
+All physical parameters are held constant.
+
+Diagnostic indicator:
+
+- **Flat scaling** → consistent with Mechanism A or C
+- **Super-linear growth** → evidence supporting Mechanism B
+
+This test probes whether the system exhibits a regime transition under load.
+
+---
+
+**Step 2 — Stabilization Sensitivity Sweep**
+
+We sweep solver stabilization strength (e.g., solver iterations, damping) across multiple levels.
+
+Diagnostic indicator:
+
+- Strong negative correlation between stabilization and $R_t$​ → supports Mechanism A
+- Weak sensitivity → points toward Mechanism B or C
+
+This step evaluates whether residuals are primarily suppressed by numerical damping.
+
+---
+
+**Step 3 — Observer Alignment Check**
+
+We compare residual behavior under different perturbation pathways:
+
+- Fixed-order baseline
+- Order-permutation injection
+- Optional timestep jitter (advanced)
+
+If residuals appear only under specific instrumentation paths, this suggests **observer–execution misalignment (Mechanism C)**.
+
+---
+
+**Design Principle**
+
+The Octonion layer in v0.4.1 is an **observer, not a controller**.
+Its role is to map the operational regime of the simulator, not to assert solver failure.
+
+---
+
 ## 🛠️ Integration & Status
 * **Minimal Intrusion:** Operates as a Python extension layer; no changes to PhysX/USD internals required.
 * **Performance:** Prototype implementation (Python/NumPy). **High-throughput C++/CUDA kernels** are available for commercial partners.
