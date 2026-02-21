@@ -480,6 +480,19 @@ Its role is to map the operational regime of the simulator, not to assert solver
 
 ---
 
+**Quick Audit Checklist (v0.4.1)**
+- Confirm identical USD scene, timestep, and solver settings across A/B/C modes.
+- Run **Noise_Baseline_Calibration** first to establish the machine noise floor (ε₀).
+- Treat signals with ‖Rₜ‖ ≤ ε₀ as numerical noise, not physical debt.
+- Execute **Density Scaling (1→10→100 bodies)** and check for nonlinear growth of ‖Rₜ‖.
+- Toggle **Damping / Baumgarte** bypass to test for heuristic suppression effects.
+- Verify that permutation injection only alters action order, not physics parameters.
+- Ensure the Octonion Observer is in passive mode (no physical intervention).
+- Cross-check against a scalar baseline (e.g., angular velocity L2) for timing alignment.
+- Report Isaac Sim version, GPU, and seed for reproducibility.
+
+---
+
 ## 🛠️ Integration & Status
 * **Minimal Intrusion:** Operates as a Python extension layer; no changes to PhysX/USD internals required.
 * **Performance:** Prototype implementation (Python/NumPy). **High-throughput C++/CUDA kernels** are available for commercial partners.
