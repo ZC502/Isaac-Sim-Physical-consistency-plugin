@@ -1,120 +1,218 @@
-# =========================================================
-# v0.4.1 Density Scaling Auto Sweep (Minimal Version)
-# =========================================================
+"""
+density_sweep_v041.py
+v0.4.1 — with Noise Baseline Calibration (auto)
 
+Features
+--------
+- automatic noise floor estimation
+- density sweep experiment
+- scheduler-friendly entrypoint
+- minimal dependencies
+"""
+
+import os
+import json
+import time
 import numpy as np
-from omni.isaac.core import World
-from omni.isaac.core.utils.stage import get_current_stage
-from omni.isaac.core.utils.prims import define_prim
-from omni.isaac.core.articulations import Articulation
-from pxr import UsdPhysics, PhysxSchema, Gf
 
-# ---------------------------------------------------------
-# Config
-# ---------------------------------------------------------
+# ============================================================
+# 🔧 Utility
+# ============================================================
 
-DENSITY_LEVELS = [1, 10, 100]   # sweep targets
-SIM_STEPS = 2000
-ROOT_TEMPLATE = "/World/CantileverArm_{}"
-
-# ---------------------------------------------------------
-# Cantilever builder (minimal reusable)
-# ---------------------------------------------------------
-
-def build_cantilever(stage, root_path):
-    root = define_prim(root_path, "Xform")
-    UsdPhysics.ArticulationRootAPI.Apply(root)
-
-    # Base
-    base = define_prim(f"{root_path}/Base", "Cube")
-    base.GetAttribute("xformOp:scale").Set(Gf.Vec3f(0.2))
-    UsdPhysics.RigidBodyAPI.Apply(base)
-    PhysxSchema.PhysxRigidBodyAPI.Apply(base).CreateKinematicEnabledAttr().Set(True)
-
-    # Link1
-    link1 = define_prim(f"{root_path}/Link1", "Capsule")
-    link1.GetAttribute("radius").Set(0.05)
-    link1.GetAttribute("height").Set(1.0)
-    link1.GetAttribute("xformOp:translate").Set(Gf.Vec3f(0, 0, -0.5))
-    UsdPhysics.RigidBodyAPI.Apply(link1)
-    UsdPhysics.CollisionAPI.Apply(link1)
-    UsdPhysics.MassAPI.Apply(link1).CreateMassAttr().Set(2.0)
-
-    joint1 = UsdPhysics.RevoluteJoint.Define(stage, f"{root_path}/Joint1")
-    joint1.CreateAxisAttr("X")
-    joint1.CreateBody0Rel().SetTargets([f"{root_path}/Base"])
-    joint1.CreateBody1Rel().SetTargets([f"{root_path}/Link1"])
-    joint1.CreateLocalPos1Attr().Set(Gf.Vec3f(0, 0, 0.5))
-
-    PhysxSchema.PhysxJointAPI.Apply(joint1.GetPrim()).CreateJointFrictionAttr().Set(0.05)
-    drive1 = PhysxSchema.PhysxJointDriveAPI.Apply(joint1.GetPrim(), "angular")
-    drive1.CreateDampingAttr().Set(1.0)
-
-    # Link2
-    link2 = define_prim(f"{root_path}/Link2", "Capsule")
-    link2.GetAttribute("radius").Set(0.04)
-    link2.GetAttribute("height").Set(1.5)
-    link2.GetAttribute("xformOp:translate").Set(Gf.Vec3f(0, 0, -1.5))
-    UsdPhysics.RigidBodyAPI.Apply(link2)
-    UsdPhysics.CollisionAPI.Apply(link2)
-    UsdPhysics.MassAPI.Apply(link2).CreateMassAttr().Set(5.0)
-
-    joint2 = UsdPhysics.RevoluteJoint.Define(stage, f"{root_path}/Joint2")
-    joint2.CreateAxisAttr("X")
-    joint2.CreateBody0Rel().SetTargets([f"{root_path}/Link1"])
-    joint2.CreateBody1Rel().SetTargets([f"{root_path}/Link2"])
-    joint2.CreateLocalPos0Attr().Set(Gf.Vec3f(0, 0, -1.0))
-    joint2.CreateLocalPos1Attr().Set(Gf.Vec3f(0, 0, 0.75))
-
-    PhysxSchema.PhysxJointAPI.Apply(joint2.GetPrim()).CreateJointFrictionAttr().Set(0.05)
-    drive2 = PhysxSchema.PhysxJointDriveAPI.Apply(joint2.GetPrim(), "angular")
-    drive2.CreateDampingAttr().Set(1.0)
+def ensure_dir(path: str):
+    os.makedirs(path, exist_ok=True)
 
 
-# ---------------------------------------------------------
-# Main sweep
-# ---------------------------------------------------------
+def timestamp():
+    return time.strftime("%Y%m%d_%H%M%S")
 
-world = World(stage_units_in_meters=1.0)
-stage = get_current_stage()
 
-results = {}
+# ============================================================
+# ⭐ Noise Baseline Calibration (NEW in v0.4.1)
+# ============================================================
 
-for N in DENSITY_LEVELS:
-    print(f"\n[v0.4.1] Running density level N={N}")
+def run_noise_baseline_calibration(
+    sim_fn,
+    samples: int = 20,
+    seed: int = 42,
+    save_path: str | None = None,
+):
+    """
+    Estimate simulator noise floor.
 
-    world.reset()
+    Parameters
+    ----------
+    sim_fn : callable
+        Function returning a scalar metric.
+        Called repeatedly under identical conditions.
+    samples : int
+        Number of repeated evaluations.
+    seed : int
+        RNG seed for reproducibility.
+    save_path : str | None
+        Optional JSON output.
 
-    articulations = []
+    Returns
+    -------
+    dict
+        {
+            "noise_mean": float,
+            "noise_std": float,
+            "samples": int
+        }
+    """
 
-    # Build scene
-    for i in range(N):
-        root_path = ROOT_TEMPLATE.format(i)
-        build_cantilever(stage, root_path)
+    rng = np.random.default_rng(seed)
 
-        art = Articulation(root_path)
-        world.scene.add(art)
-        articulations.append(art)
+    values = []
 
-    # Run simulation
-    vel_accum = []
+    for i in range(samples):
+        # Fixed conditions, multiple measurements
+        val = sim_fn(rng)
+        values.append(val)
 
-    for _ in range(SIM_STEPS):
-        world.step(render=False)
+    values = np.array(values)
 
-        frame_vel = 0.0
-        for art in articulations:
-            v = art.get_joint_velocities()
-            if v is not None and len(v) > 0:
-                frame_vel += np.linalg.norm(v)
+    result = {
+        "noise_mean": float(values.mean()),
+        "noise_std": float(values.std(ddof=1)),
+        "samples": samples,
+    }
 
-        vel_accum.append(frame_vel)
+    print("\n[NoiseBaseline]")
+    print(json.dumps(result, indent=2))
 
-    mean_vel = float(np.mean(vel_accum))
-    results[N] = mean_vel
+    if save_path is not None:
+        ensure_dir(os.path.dirname(save_path))
+        with open(save_path, "w") as f:
+            json.dump(result, f, indent=2)
 
-    print(f"[v0.4.1] N={N} → mean velocity proxy = {mean_vel:.6f}")
+    return result
 
-print("\n========== Density Sweep Summary ==========")
-for k, v in results.items():
-    print(f"N={k:4d} | proxy={v:.6f}")
+
+# ============================================================
+# 🧪 Example simulator hook (YOU will replace later)
+# ============================================================
+
+def example_simulation(rng: np.random.Generator, density: float = 1.0):
+    """
+    Minimal stand-in for your MuJoCo / Isaac experiment.
+
+    Replace this with your real rollout.
+
+    Returns a scalar metric.
+    """
+
+    # ---- deterministic signal ----
+    signal = density * 10.0
+
+    # ---- stochastic noise (Simulate real physical noise) ----
+    noise = rng.normal(0.0, 0.05)
+
+    return signal + noise
+
+
+# ============================================================
+# 🚀 Density Sweep (v0.4.1 core)
+# ============================================================
+
+def run_density_sweep(
+    densities,
+    noise_floor: dict | None,
+    seed: int = 123,
+    save_path: str | None = None,
+):
+    """
+    Run density sweep experiment.
+
+    Parameters
+    ----------
+    densities : iterable[float]
+    noise_floor : dict | None
+        Output of noise calibration.
+    """
+
+    rng = np.random.default_rng(seed)
+
+    results = []
+
+    for d in densities:
+        val = example_simulation(rng, density=d)
+
+        entry = {
+            "density": float(d),
+            "metric": float(val),
+        }
+
+        # ⭐ Optional: Signal-to-Noise Ratio
+        if noise_floor is not None and noise_floor["noise_std"] > 0:
+            entry["snr"] = float(
+                (val - noise_floor["noise_mean"])
+                / noise_floor["noise_std"]
+            )
+
+        results.append(entry)
+
+        print(f"[Sweep] density={d:.3f} metric={val:.6f}")
+
+    if save_path is not None:
+        ensure_dir(os.path.dirname(save_path))
+        with open(save_path, "w") as f:
+            json.dump(results, f, indent=2)
+
+    return results
+
+
+# ============================================================
+# 🎯 Scheduler Entry (IMPORTANT)
+# ============================================================
+
+def run_experiment_v041(
+    output_dir: str = "outputs_v041",
+    do_noise_calibration: bool = True,
+):
+    """
+    ⭐ Scheduler-friendly single entrypoint
+    """
+
+    ensure_dir(output_dir)
+
+    # --------------------------------------------------------
+    # 1️⃣ Noise calibration
+    # --------------------------------------------------------
+    noise_floor = None
+
+    if do_noise_calibration:
+        noise_floor = run_noise_baseline_calibration(
+            sim_fn=lambda rng: example_simulation(rng, density=1.0),
+            samples=20,
+            save_path=os.path.join(
+                output_dir, f"noise_floor_{timestamp()}.json"
+            ),
+        )
+
+    # --------------------------------------------------------
+    # 2️⃣ Density sweep
+    # --------------------------------------------------------
+    densities = np.linspace(0.5, 2.0, 8)
+
+    results = run_density_sweep(
+        densities=densities,
+        noise_floor=noise_floor,
+        save_path=os.path.join(
+            output_dir, f"density_sweep_{timestamp()}.json"
+        ),
+    )
+
+    return {
+        "noise_floor": noise_floor,
+        "results": results,
+    }
+
+
+# ============================================================
+# 🧪 CLI
+# ============================================================
+
+if __name__ == "__main__":
+    run_experiment_v041()
