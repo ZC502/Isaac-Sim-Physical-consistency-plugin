@@ -172,6 +172,17 @@ This project therefore defines an **audit standard**, not a policy baseline.
 
 **v0.4.2 — Joint Damping Robustness Study**
 
+**Pluggable Physical Backend (v0.4.2)**
+
+The diagnostic sweep routes all rollouts through a unified adapter.
+
+**Action for Auditors:**
+
+To validate **PhysX/Isaac Sim** physical integrity, override the ```physical_rollout_adapter(...)``` with your specific simulation scenes.
+
+Note: While the interface is backend-agnostic, it is optimized for auditing high-concurrency solvers where order-dependency typically manifests.
+
+
 **New in this version**
 
 - Joint damping sweep with multi-seed statistics
@@ -182,27 +193,27 @@ This project therefore defines an **audit standard**, not a policy baseline.
 
 **Why this matters**
 
-Physical simulators often hide instability behind poorly tuned damping.
+Physical Target Solver (PhysX) often hides instability behind poorly tuned damping.
 v0.4.2 explicitly probes whether observed effects:
 
 - persist across damping regimes
-- exceed the simulator noise floor
+- exceed the Target Solver (PhysX) noise floor
 - remain statistically significant
 
 This substantially strengthens sim-to-real credibility.
 
 
-**Simulator-Agnostic Adapter Frameworkv**
+**Target Solver (PhysX)-Agnostic Adapter Framework**
 
-0.4.2 introduces the physical_rollout_adapter, a standardized interface for high-fidelity auditing.
+v0.4.2 introduces the ```physical_rollout_adapter```, a standardized interface for high-fidelity auditing.
 
 - **The Goal**: To strip away "numerical camouflage" (excessive damping/stabilization) and expose raw physical debt.
-- **Action for Auditors**: Replace the example_simulation hook in scripts/density_sweep_v041.py with your proprietary Isaac Sim / MuJoCo rollout.
+- **Action for Auditors**: Replace the ```example_simulation``` hook in ```scripts/density_sweep_v041.py``` with your proprietary Isaac Sim / high-fidelity solvers rollout.
 - **Outcome**: A 2D Heatmap of $Density \times Damping$, revealing the "Red Zone" where solver associativity collapses.
 
 **Expected Empirical Results:**
 Auditing with v0.4.2 should reveal a **Phase Transition**:
-1. **Green Zone (Associative)**: Low density, high damping. $SNR < 1.0$. Simulator is trustworthy.
+1. **Green Zone (Associative)**: Low density, high damping. $SNR < 1.0$. Target Solver (PhysX) is trustworthy.
 2. **Yellow Zone (Warning)**: High density, high damping. $SNR \approx 3.0$. Physics is being masked by numerical suppression.
 3. **Red Zone (Collapse)**: High density, low damping. $SNR > 10.0$. The solver's causal integrity is broken. **This is the Sim-to-Real gap's origin**.
 
