@@ -1,19 +1,48 @@
 """
 density_sweep_v041.py
-v0.4.1 — with Noise Baseline Calibration (auto)
+v0.4.2 — with Noise Baseline Calibration (auto)
 
 Features
 --------
 - automatic noise floor estimation
-- density sweep experiment
+- density × damping grid
 - scheduler-friendly entrypoint
-- minimal dependencies
+- simulator-agnostic adapter
 """
 
 import os
 import json
 import time
 import numpy as np
+
+
+# ============================================================
+# 🔌 Physical rollout adapter (v0.4.2)
+# ============================================================
+
+def physical_rollout_adapter(
+    rng: np.random.Generator,
+    density: float,
+    joint_damping: float,
+) -> float:
+    """
+    Unified hook point for real simulator backends.
+
+    Default behavior:
+        Falls back to example_simulation() so the script
+        remains runnable out-of-the-box.
+
+    Auditor integration:
+        Replace the body of this function with an actual
+        Isaac Sim / MuJoCo rollout.
+
+    Returns
+    -------
+    float
+        Scalar instability / drift metric.
+    """
+    return example_simulation(rng, density=density)
+
 
 # ============================================================
 # 🔧 Utility
@@ -28,7 +57,25 @@ def timestamp():
 
 
 # ============================================================
-# ⭐ Noise Baseline Calibration (NEW in v0.4.1)
+# 🧪 Example simulator hook (fallback only)
+# ============================================================
+
+def example_simulation(rng: np.random.Generator, density: float) -> float:
+    """
+    Lightweight stochastic fallback simulator.
+
+    NOTE:
+        This is NOT the physical benchmark.
+        It exists only to keep the sweep runnable when no
+        simulator backend is attached.
+    """
+    signal = density * 10.0
+    noise = rng.normal(0.0, 0.05)
+    return signal + noise
+
+
+# ============================================================
+# ⭐ Noise Baseline Calibration
 # ============================================================
 
 def run_noise_baseline_calibration(
@@ -39,43 +86,22 @@ def run_noise_baseline_calibration(
 ):
     """
     Estimate simulator noise floor.
-
-    Parameters
-    ----------
-    sim_fn : callable
-        Function returning a scalar metric.
-        Called repeatedly under identical conditions.
-    samples : int
-        Number of repeated evaluations.
-    seed : int
-        RNG seed for reproducibility.
-    save_path : str | None
-        Optional JSON output.
-
-    Returns
-    -------
-    dict
-        {
-            "noise_mean": float,
-            "noise_std": float,
-            "samples": int
-        }
     """
 
     rng = np.random.default_rng(seed)
-
     values = []
 
-    for i in range(samples):
-        # Fixed conditions, multiple measurements
+    for _ in range(samples):
         val = sim_fn(rng)
         values.append(val)
 
     values = np.array(values)
 
+    noise_std = float(values.std(ddof=1)) if len(values) > 1 else 0.0
+
     result = {
         "noise_mean": float(values.mean()),
-        "noise_std": float(values.std(ddof=1)),
+        "noise_std": noise_std,
         "samples": samples,
     }
 
@@ -91,69 +117,84 @@ def run_noise_baseline_calibration(
 
 
 # ============================================================
-# 🧪 Example simulator hook (YOU will replace later)
+# 🧪 Joint Damping × Density Grid (v0.4.2 core)
 # ============================================================
 
-def example_simulation(rng: np.random.Generator, density: float = 1.0):
-    """
-    Minimal stand-in for your MuJoCo / Isaac experiment.
-
-    Replace this with your real rollout.
-
-    Returns a scalar metric.
-    """
-
-    # ---- deterministic signal ----
-    signal = density * 10.0
-
-    # ---- stochastic noise (Simulate real physical noise) ----
-    noise = rng.normal(0.0, 0.05)
-
-    return signal + noise
-
-
-# ============================================================
-# 🚀 Density Sweep (v0.4.1 core)
-# ============================================================
-
-def run_density_sweep(
+def run_damping_density_grid(
     densities,
+    dampings,
     noise_floor: dict | None,
-    seed: int = 123,
+    seeds=(0, 1, 2),
+    early_stop_snr: float | None = 0.5,
     save_path: str | None = None,
 ):
     """
-    Run density sweep experiment.
-
-    Parameters
-    ----------
-    densities : iterable[float]
-    noise_floor : dict | None
-        Output of noise calibration.
+    2D grid experiment:
+        density × joint damping
     """
-
-    rng = np.random.default_rng(seed)
 
     results = []
 
     for d in densities:
-        val = example_simulation(rng, density=d)
+        for damping in dampings:
 
-        entry = {
-            "density": float(d),
-            "metric": float(val),
-        }
+            seed_metrics = []
 
-        # ⭐ Optional: Signal-to-Noise Ratio
-        if noise_floor is not None and noise_floor["noise_std"] > 0:
-            entry["snr"] = float(
-                (val - noise_floor["noise_mean"])
-                / noise_floor["noise_std"]
+            for s in seeds:
+                rng = np.random.default_rng(s)
+
+                val = physical_rollout_adapter(
+                    rng,
+                    density=d,
+                    joint_damping=damping,
+                )
+
+                seed_metrics.append(val)
+
+            seed_metrics = np.array(seed_metrics)
+
+            mean_val = float(seed_metrics.mean())
+            std_val = (
+                float(seed_metrics.std(ddof=1))
+                if len(seed_metrics) > 1
+                else 0.0
             )
 
-        results.append(entry)
+            entry = {
+                "density": float(d),
+                "joint_damping": float(damping),
+                "mean_metric": mean_val,
+                "std_metric": std_val,
+                "num_seeds": len(seeds),
+            }
 
-        print(f"[Sweep] density={d:.3f} metric={val:.6f}")
+            # ⭐ Signal-to-noise ratio
+            snr = None
+            if noise_floor is not None and noise_floor["noise_std"] > 0:
+                snr = (
+                    mean_val - noise_floor["noise_mean"]
+                ) / max(noise_floor["noise_std"], 1e-12)
+                entry["snr"] = float(snr)
+
+            print(
+                f"[Grid] density={d:.3f} damping={damping:.4f} "
+                f"mean={mean_val:.6f} std={std_val:.6f} "
+                + (f"snr={snr:.3f}" if snr is not None else "")
+            )
+
+            results.append(entry)
+
+            # 🛑 Early stop
+            if (
+                early_stop_snr is not None
+                and snr is not None
+                and snr < early_stop_snr
+            ):
+                print(
+                    "[EarlyStop] Effect below noise floor, "
+                    "stopping higher damping sweep for this density."
+                )
+                break
 
     if save_path is not None:
         ensure_dir(os.path.dirname(save_path))
@@ -164,49 +205,60 @@ def run_density_sweep(
 
 
 # ============================================================
-# 🎯 Scheduler Entry (IMPORTANT)
+# 🎯 Unified experiment entry
 # ============================================================
 
-def run_experiment_v041(
-    output_dir: str = "outputs_v041",
+def run_experiment_v042(
+    output_dir: str = "outputs_v042",
     do_noise_calibration: bool = True,
 ):
     """
-    ⭐ Scheduler-friendly single entrypoint
+    v0.4.2 unified experiment entry
     """
 
     ensure_dir(output_dir)
 
-    # --------------------------------------------------------
-    # 1️⃣ Noise calibration
-    # --------------------------------------------------------
     noise_floor = None
 
     if do_noise_calibration:
         noise_floor = run_noise_baseline_calibration(
-            sim_fn=lambda rng: example_simulation(rng, density=1.0),
+            sim_fn=lambda rng: physical_rollout_adapter(
+                rng,
+                density=1.0,
+                joint_damping=0.1,
+            ),
             samples=20,
             save_path=os.path.join(
-                output_dir, f"noise_floor_{timestamp()}.json"
+                output_dir,
+                f"noise_floor_{timestamp()}.json",
             ),
         )
 
-    # --------------------------------------------------------
-    # 2️⃣ Density sweep
-    # --------------------------------------------------------
-    densities = np.linspace(0.5, 2.0, 8)
+    densities = np.linspace(0.5, 2.0, 6)
 
-    results = run_density_sweep(
+    dampings = np.array([
+        0.01,
+        0.05,
+        0.1,
+        0.2,
+        0.4,
+    ])
+
+    grid_results = run_damping_density_grid(
         densities=densities,
+        dampings=dampings,
         noise_floor=noise_floor,
+        seeds=(0, 1, 2),
+        early_stop_snr=0.3,
         save_path=os.path.join(
-            output_dir, f"density_sweep_{timestamp()}.json"
+            output_dir,
+            f"damping_density_grid_{timestamp()}.json",
         ),
     )
 
     return {
         "noise_floor": noise_floor,
-        "results": results,
+        "grid_results": grid_results,
     }
 
 
@@ -215,4 +267,4 @@ def run_experiment_v041(
 # ============================================================
 
 if __name__ == "__main__":
-    run_experiment_v041()
+    run_experiment_v042()
