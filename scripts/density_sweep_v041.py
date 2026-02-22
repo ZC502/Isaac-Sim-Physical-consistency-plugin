@@ -34,7 +34,7 @@ def physical_rollout_adapter(
 
     Auditor integration:
         Replace the body of this function with an actual
-        Isaac Sim / MuJoCo rollout.
+        Isaac Sim / high-fidelity solver rollout.
 
     Returns
     -------
