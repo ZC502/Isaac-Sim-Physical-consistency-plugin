@@ -211,11 +211,38 @@ v0.4.2 introduces the ```physical_rollout_adapter```, a standardized interface f
 - **Action for Auditors**: Replace the ```example_simulation``` hook in ```scripts/density_sweep_v041.py``` with your proprietary Isaac Sim / high-fidelity solvers rollout.
 - **Outcome**: A 2D Heatmap of $Density \times Damping$, revealing the "Red Zone" where solver associativity collapses.
 
-**Expected Empirical Results:**
-Auditing with v0.4.2 should reveal a **Phase Transition**:
-1. **Green Zone (Associative)**: Low density, high damping. $SNR < 1.0$. Target Solver (PhysX) is trustworthy.
-2. **Yellow Zone (Warning)**: High density, high damping. $SNR \approx 3.0$. Physics is being masked by numerical suppression.
-3. **Red Zone (Collapse)**: High density, low damping. $SNR > 10.0$. The solver's causal integrity is broken. **This is the Sim-to-Real gap's origin**.
+**Expected Empirical Patterns (v0.4.2)**
+
+When running the v0.4.2 diagnostic toolbox across density and damping sweeps, practitioners may observe regime-dependent behavior in the signal-to-noise ratio (SNR) of the associator metric.
+
+**Heuristic interpretation bands (workload-dependent):**
+
+1. **Green Zone (Effectively Associative)**:
+
+Low density, sufficiently damped regimes typically exhibit:
+- SNR < 1.0
+- Associator signal near calibrated noise floor
+
+In this regime, the simulator behaves approximately associative for the tested workload.
+
+2. **Yellow Zone (Suppressed or Marginal Regime)**:
+
+Higher density scenarios under strong damping may exhibit:
+- SNR ≈ 1–3
+- Intermittent growth in cumulative associator debt
+
+This pattern is **consistent with** numerical suppression effects where stabilization mechanisms may mask emerging order sensitivity.
+
+3. **Red Zone (Order-Sensitive Regime)**:
+
+High density combined with low damping may exhibit:
+- SNR > 10
+- Rapid growth of cumulative associator debt
+
+This regime indicates **measurable order sensitivity** in the numerical pipeline and warrants further investigation for potential sim-to-real risk.
+
+**Important:**
+These bands are empirical heuristics, not universal thresholds. Exact boundaries depend on timestep, solver settings, contact density, and hardware configuration.
 
 ---
 
