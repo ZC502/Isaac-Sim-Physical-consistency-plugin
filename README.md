@@ -1,6 +1,6 @@
 **Non-Associative Residual Hypothesis (NARH)**
 
---
+---
 
 **v0.4.2 introduces a non-associative residual diagnostic that quantifies order sensitivity in physics simulation pipelines, enabling auditors to distinguish floating-point noise from structurally persistent integration error under controlled density and damping sweeps.**
 
