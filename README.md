@@ -1,4 +1,55 @@
-**Non-Associative Residual Hypothesis (NARH)**
+# Isaac-Sim-Physical-consistency-plugin
+
+> [!IMPORTANT]
+ ### 🔥 FINAL STATUS UPDATE — Feb 24, 2026
+
+**Project Status:**
+
+Isaac-Sim-Physical-consistency-plugin v0.4.2 is designated as the **final public release**. The repository will remain available for archival and independent evaluation, but no further feature development is planned.
+
+**Maintenance Policy:**
+- No new features are scheduled
+- Critical reproducibility fixes may be merged if necessary
+- The codebase is considered **functionally complete for audit purposes**
+
+**Research Direction:**
+Future work by the author will focus on octonion-native simulation architectures and embodied AI systems. These efforts are separate from the present diagnostic tool.
+
+---
+
+**Notice to Auditors and Simulation Teams**
+
+This repository provides a **falsifiable diagnostic protocol** for measuring order sensitivity under controlled density and damping sweeps.
+
+Independent groups are encouraged to:
+- run the provided benchmarks in their own environments
+- report both positive and null results
+- substitute their internal rollout metrics via the adapter interface
+- publish reproduction findings where appropriate
+
+**Negative results are explicitly welcome.**
+
+---
+
+**Scope Clarification**
+
+v0.4.2 does **not** claim universal simulator failure.
+Instead, it provides instrumentation to help determine whether a given pipeline operates in:
+- an associative (noise-dominated) regime, or
+- an order-sensitive (structure-dominated) regime.
+
+The outcome is expected to be **workload- and configuration-dependent.**
+
+---
+
+**Final Note**
+
+The long-term value of this release depends on **independent replication across diverse workloads.**
+Practitioners running high-density or low-damping scenarios may find the diagnostics particularly informative.
+
+---
+
+# **Non-Associative Residual Hypothesis (NARH)**
 
 ---
 
@@ -12,7 +63,7 @@ Consider a rigid-body simulation system defined by:
 
 - State space $S \subset \mathbb{R}^n$
 - Associative update operator $\Phi \Delta t : S \to S$
-- Parallel constraint resolution composed of sub-operators $\{\Psi_i\}_{i=1}^k$
+- Parallel constraint resolution composed of sub-operators $`\{\Psi_i\}_{i=1}^k`$
 
 	​
 The simulator implements a discrete update:
@@ -132,15 +183,12 @@ The Octonion layer is now explicitly framed as an **observer of order-dependent 
 
 ---
 
-### Non-Associativity as an Observable, Not a Controller
+**Non-Associativity as an Observable, Not a Controller**
 
 In v0.4, the octonion formulation is used purely as an *observability layer*.
 
 Given identical physical inputs, we compare two update paths:
-\[
-(q \otimes \Delta q) \quad \text{vs.} \quad (\Delta q \otimes q)
-\]
-
+$(q \otimes \Delta q)$ vs. $(\Delta q \otimes q)$
 Their difference defines an **associator**, which vanishes in ideal associative processes but emerges under discrete, asynchronous solvers.
 
 Importantly:
@@ -152,7 +200,7 @@ Any intervention remains explicitly downstream and optional.
 
 ---
 
-## Why Associativity Becomes a Liability in Embodied AI
+# Why Associativity Becomes a Liability in Embodied AI
 
 Associativity is a valid property of continuous physical laws, but **not of their discrete numerical realization**.
 
@@ -163,7 +211,7 @@ This is a key reason why policies trained in simulation fail under real-world co
 
 ---
 
-## Why This Project Does Not Provide a Final Controller
+**Why This Project Does Not Provide a Final Controller**
 
 This repository intentionally does **not** propose a new controller or policy.
 
